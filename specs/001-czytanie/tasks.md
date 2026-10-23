@@ -82,7 +82,7 @@
 - [x] **T14 Узгодження** — `specs/001-czytanie/alignment.md`
   - Результат: артефакти й команди, таблиці SC → як перевірено → статус і Non-negotiables, відхилення, порівняння з `idea.md`.
   - Done: усі Non-negotiables ✓ або зафіксовані як прийняті відхилення.
-- [ ] **T15 Репозиторій і деплой** — `git init`, `StsZu/Polish_czytanie`, Cloudflare
+- [x] **T15 Репозиторій і деплой** — `git init`, `StsZu/Polish_czytanie`, Cloudflare
   - Результат: публічний репозиторій, `npm run deploy` → `https://polish-czytanie.sts-zubar.workers.dev/`.
   - Done: SC-15 (md5 файлів сайту = `dist`, заголовки, smoke у WebKit і офлайн). Лише після `ok push` і `ok deploy`.
 
