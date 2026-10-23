@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Attempt, ContentFile, Exercise, HardItem, NewAttempt, SectionKey, SessionRecord, Settings } from '../contracts.ts'
 import { DEFAULT_SETTINGS } from '../contracts.ts'
-import { loadContent } from '../core/content/load.ts'
+import { loadContent, withVoice } from '../core/content/load.ts'
 import * as db from '../core/progress/db.ts'
 import { dayOf } from '../core/progress/days.ts'
 import { masteryLevel } from '../core/progress/mastery.ts'
@@ -44,13 +44,14 @@ export function hardText(e: Exercise, section: SectionKey, unit: number, word: n
 }
 
 export function StoreProvider({ children, fallback }: { children: ReactNode; fallback: (error: string | null) => ReactNode }) {
-  const [content, setContent] = useState<ContentFile | null>(null)
+  const [rawContent, setContent] = useState<ContentFile | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [attempts, setAttempts] = useState<Attempt[]>([])
   const [hard, setHard] = useState<HardItem[]>([])
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const content = useMemo(() => rawContent && withVoice(rawContent, settings.voice), [rawContent, settings.voice])
   const queue = useRef<(() => Promise<unknown>)[]>([])
   const running = useRef<Promise<void> | null>(null)
 

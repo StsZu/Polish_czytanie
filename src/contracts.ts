@@ -34,11 +34,22 @@ export interface Unit {
   do: number
 }
 
+/** The recording of a section in another voice: the same words, their own times. */
+export interface VoiceAudio {
+  audio: string
+  bytes: number
+  duration: number
+  /** [od, do] of every word, in the order of `Section.words`. */
+  times: [number, number][]
+}
+
 export interface Section {
   /** Path relative to the base, with the content hash in the name; null when there is no recording. */
   audio: string | null
   bytes: number
   duration: number
+  /** The other voices by id (`ContentFile.voices`); the main voice is `audio` and the times in `words`. */
+  alt: Record<string, VoiceAudio>
   /** Exactly the text sent to speech synthesis: gama words joined by ", ", lines ended by "."; utwór as written. */
   text: string
   words: Word[]
@@ -76,8 +87,15 @@ export interface Exercise {
   ruleExamples: number[]
 }
 
+export interface Voice {
+  id: string
+  name: string
+}
+
 export interface ContentFile {
   version: 1
+  /** The narrator voices; the first is the main one. */
+  voices: Voice[]
   built: string
   textsMd5: string
   exercises: Exercise[]
@@ -139,11 +157,13 @@ export interface Settings {
   rate: number
   pacer: boolean
   recordSelf: boolean
+  /** Id of the narrator voice (`ContentFile.voices`). */
+  voice: string
   /** Pace of the pacer by level (FR-17); missing → target − 10. */
   pacerByLevel: Partial<Record<Level, { wpm: number; inRow: number }>>
 }
 
-export const DEFAULT_SETTINGS: Settings = { fontPx: 24, theme: 'system', rate: 1, pacer: false, recordSelf: false, pacerByLevel: {} }
+export const DEFAULT_SETTINGS: Settings = { fontPx: 24, theme: 'system', rate: 1, pacer: false, recordSelf: false, voice: 'alex', pacerByLevel: {} }
 
 export interface BackupFile {
   app: 'polish-czytanie'

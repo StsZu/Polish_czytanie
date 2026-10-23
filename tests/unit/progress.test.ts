@@ -135,7 +135,7 @@ describe('today plan', () => {
 
 describe('backup (SC-11)', () => {
   const hard: HardItem = { ...addMistake(undefined, { exercise: '07', section: 'gama', unit: 0, word: 1, text: 'Kasia' }, '2026-10-22', '2026-10-22T10:00:00Z') }
-  const data = { attempts: [{ ...at('2026-10-22', 'cold', { wpm: 50 }), id: 1 }], hard: [hard], sessions: [], settings: { ...DEFAULT_SETTINGS, fontPx: 26 } }
+  const data = { attempts: [{ ...at('2026-10-22', 'cold', { wpm: 50 }), id: 1 }], hard: [hard], sessions: [], settings: { ...DEFAULT_SETTINGS, fontPx: 26, voice: 'beata' } }
 
   it('round-trips through JSON', () => {
     const file = JSON.stringify(createBackup(data))
@@ -145,7 +145,7 @@ describe('backup (SC-11)', () => {
   })
 
   it('lists every problem of a damaged file', () => {
-    const bad = { app: 'polish-czytanie', version: 1, attempts: [{ exercise: '7', day: '22.10', at: 'x', kind: 'nope', seconds: -1 }, 5], hard: [{}], settings: { fontPx: 99 } }
+    const bad = { app: 'polish-czytanie', version: 1, attempts: [{ exercise: '7', day: '22.10', at: 'x', kind: 'nope', seconds: -1 }, 5], hard: [{}], settings: { fontPx: 99, voice: 5 } }
     try {
       parseBackup(JSON.stringify(bad))
       expect.unreachable()
@@ -157,6 +157,7 @@ describe('backup (SC-11)', () => {
       expect(problems).toContain('Спроба 2: має бути об\'єкт.')
       expect(problems.some((p) => p.startsWith('Важке слово 1:'))).toBe(true)
       expect(problems).toContain('Налаштування «fontPx» має бути 22–30.')
+      expect(problems).toContain('Налаштування «voice» має бути назвою голосу (латиницею).')
     }
     expect(() => parseBackup('{')).toThrow(BackupError)
     expect(() => parseBackup('{"app":"other"}')).toThrow(/polish-czytanie/)

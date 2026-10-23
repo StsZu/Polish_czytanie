@@ -5,7 +5,7 @@ import { flashStart, nextFlash } from '../../core/flash.ts'
 import { ReadingText } from '../text/ReadingText.tsx'
 import { useStore } from '../store.tsx'
 import { useKeys, useSectionAudio, useSelfRecording, useWordHelp } from './common.tsx'
-import { SelfCompare } from './StepGama.tsx'
+import { SelfRecord } from './StepGama.tsx'
 import type { SessionStepProps } from './Session.tsx'
 
 type Phase = 'ready' | 'showing' | 'say' | 'check'
@@ -18,7 +18,7 @@ export function StepFlash({ exercise, record, addHard, done }: SessionStepProps)
   const [unit, setUnit] = useState(0)
   const [phase, setPhase] = useState<Phase>('ready')
   const [flash, setFlash] = useState(() => flashStart(exercise.level))
-  const help = useWordHelp(audio, phase === 'check')
+  const help = useWordHelp(audio, phase === 'check', pasaze, 'pasaze')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const started = useRef(0)
   useEffect(() => () => {
@@ -68,6 +68,7 @@ export function StepFlash({ exercise, record, addHard, done }: SessionStepProps)
           ? <ReadingText section={pasaze} kind="pasaze" units={[unit]} current={phase === 'check' ? audio.current : -1} revealed={help.revealed} onTap={phase === 'check' ? help.tap : undefined} onLongPress={phase === 'check' ? help.reveal : undefined} />
           : <div className="flash-placeholder" aria-hidden="true">{phase === 'say' ? '…' : ''}</div>}
       </div>
+      <SelfRecord rec={rec} checked={phase === 'check'} onDictor={() => void audio.playUnit(unit)} />
       {audio.error && <p className="notice">{audio.error}</p>}
       <div className="step-actions sticky">
         {phase === 'ready' && <button type="button" className="button primary big" onClick={show} data-testid="show">Показати <kbd>пробіл</kbd></button>}
@@ -77,7 +78,6 @@ export function StepFlash({ exercise, record, addHard, done }: SessionStepProps)
             <button type="button" className="button primary big" onClick={() => answer(true)} data-testid="yes">Так <kbd>1</kbd></button>
             <button type="button" className="button big" onClick={() => answer(false)} data-testid="no">Ні <kbd>2</kbd></button>
             <button type="button" className="button" onClick={() => void audio.playUnit(unit)} data-testid="again">Ще раз</button>
-            <SelfCompare rec={rec} onDictor={() => void audio.playUnit(unit)} />
           </>
         )}
       </div>

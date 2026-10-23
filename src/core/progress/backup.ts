@@ -65,6 +65,7 @@ function checkSettings(s: unknown, problems: string[]): Partial<Settings> {
   if (s.theme !== undefined) ['system', 'light', 'dark'].includes(s.theme as string) ? (out.theme = s.theme as Settings['theme']) : problems.push('Налаштування «theme» має бути system, light або dark.')
   if (s.rate !== undefined) isNumber(s.rate) && s.rate >= 0.5 && s.rate <= 1.5 ? (out.rate = s.rate) : problems.push('Налаштування «rate» має бути 0,5–1,5.')
   for (const f of ['pacer', 'recordSelf'] as const) if (s[f] !== undefined) typeof s[f] === 'boolean' ? (out[f] = s[f] as boolean) : problems.push(`Налаштування «${f}» має бути true або false.`)
+  if (s.voice !== undefined) typeof s.voice === 'string' && /^[a-z]{1,20}$/.test(s.voice) ? (out.voice = s.voice) : problems.push('Налаштування «voice» має бути назвою голосу (латиницею).')
   if (s.pacerByLevel !== undefined) {
     const ok = isObject(s.pacerByLevel) && Object.entries(s.pacerByLevel).every(([k, v]) => ['1', '2', '3'].includes(k) && isObject(v) && isNumber(v.wpm) && isNumber(v.inRow))
     if (ok) out.pacerByLevel = s.pacerByLevel as Settings['pacerByLevel']

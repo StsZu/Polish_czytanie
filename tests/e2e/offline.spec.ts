@@ -35,7 +35,7 @@ test('manifest and service worker under /Polish_czytanie/, a whole session offli
 
   // Opening the exercise caches its three recordings.
   await page.goto('./#/c/07')
-  await expect.poll(async () => (await audioKeys(page)).filter((p) => p.includes('/audio/07-')).length, { timeout: 30_000 }).toBe(3)
+  await expect.poll(async () => (await audioKeys(page)).filter((p) => p.includes('/audio/alex-07-')).length, { timeout: 30_000 }).toBe(3)
 
   await context.setOffline(true)
   await page.reload()
@@ -105,7 +105,7 @@ test('manifest and service worker under /Polish_czytanie/, a whole session offli
   }
   await expect(page.getByTestId('updateBanner')).toHaveCount(0)
   expect(await counts(page)).toEqual(before)
-  expect((await audioKeys(page)).filter((p) => p.includes('/audio/07-'))).toHaveLength(3)
+  expect((await audioKeys(page)).filter((p) => p.includes('/audio/alex-07-'))).toHaveLength(3)
   await page.getByTestId('tab-exercises').click()
   await expect(page.getByTestId('card-07')).toContainText('аудіо на пристрої')
   expect(errors).toEqual([])

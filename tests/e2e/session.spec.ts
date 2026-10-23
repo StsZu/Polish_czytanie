@@ -322,3 +322,68 @@ test('in the gama a word is marked by keyboard: ← → and «x» (T20)', async 
   await page.goto('./#/trudne')
   await expect(page.getByTestId('hardCard')).toContainText('Kasia')
 })
+
+test('a tap plays the word in the gama, the whole line in pasaże, the sentence in utwór', async ({ page }) => {
+  // Every word that lights up while sounding, in order.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __lit: string[] }
+    w.__lit = []
+    new MutationObserver((records) => {
+      for (const r of records) {
+        const el = r.target as HTMLElement
+        if (el.classList?.contains('now') && w.__lit.at(-1) !== el.textContent) w.__lit.push(el.textContent ?? '')
+      }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
+  const lit = () => page.evaluate(() => (window as unknown as { __lit: string[] }).__lit)
+  const reset = () => page.evaluate(() => { (window as unknown as { __lit: string[] }).__lit = [] })
+  const idle = () => expect(page.getByTestId('playAll')).toBeVisible({ timeout: 10_000 })
+
+  await page.goto('./#/sluchaj/07')
+  const words = page.getByTestId('word')
+  await expect(words.nth(1)).toHaveText('Kasia')
+  await words.nth(1).tap()
+  await expect(page.getByTestId('stop')).toBeVisible()
+  await idle()
+  expect(await lit()).toEqual(['Kasia'])
+
+  await page.getByTestId('section-pasaze').click()
+  const line = page.locator('[data-unit="1"] [data-testid="word"]')
+  await expect(line.first()).toHaveText('sum')
+  await reset()
+  await line.first().tap()
+  await expect(page.getByTestId('stop')).toBeVisible()
+  await idle()
+  expect(await lit()).toEqual(['sum', 'i', 'szum', 'morza'])
+
+  await page.getByTestId('section-utwor').click()
+  await expect(words.nth(5)).toHaveText('kaszę')
+  await reset()
+  await words.nth(0).tap()
+  await expect(page.getByTestId('stop')).toBeVisible()
+  await idle()
+  // «Kasia przy kasie płaci za kaszę.» and nothing of «Cena niska…».
+  expect(await lit()).toEqual(['Kasia', 'przy', 'kasie', 'płaci', 'za', 'kaszę'])
+})
+
+test('«Записувати себе» is in the step: the switch, then the recording or why it cannot record', async ({ page }) => {
+  await page.goto('./#/c/07/krok/2')
+  const toggle = page.getByTestId('recordToggle')
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('selfRecord')).toContainText(/Запис \d:\d\d|Мікрофон недоступний|Чекаю дозволу на мікрофон/)
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByTestId('recording')).toHaveCount(0)
+})
+
+test('the narrator voice is chosen in the settings and the recordings follow it', async ({ page }) => {
+  await page.goto('./#/ustawienia')
+  await page.getByTestId('settingsVoice').selectOption('beata')
+  const request = page.waitForRequest(/audio\/beata-07-gama\./)
+  await page.goto('./#/sluchaj/07')
+  await request
+  await page.goto('./#/ustawienia')
+  await expect(page.getByTestId('settingsVoice')).toHaveValue('beata')
+})

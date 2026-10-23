@@ -6,6 +6,7 @@
   "scripts": {
     "sync-content": "node scripts/sync-content.mjs",
     "data": "node --experimental-strip-types --no-warnings scripts/data.ts",
+    "audio": "npm run data --silent -- --tts-plan && python3 -I scripts/audio.py",
     "dev": "npm run data && vite",
     "build": "npm run data && tsc --noEmit && vite build",
     "build:pages": "npm run data && tsc --noEmit && vite build --mode pages",

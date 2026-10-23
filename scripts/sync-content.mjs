@@ -1,10 +1,10 @@
-// One-off copy of the author's texts and recordings from the Krok po kroku 2 course into content/.
-// After the copy, content/ is the source of truth; SOURCE.md5 records what was copied.
+// One-off copy of the author's texts from the Krok po kroku 2 course into content/teksty (the recordings are made
+// by scripts/audio.py into content/audio/<voice>/). content/ is the source of truth; SOURCE.md5 records its state.
 //   node scripts/sync-content.mjs [--from <czytanie dir>]
 //   node scripts/sync-content.mjs --md5-only
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 
 const DEFAULT = '/Users/szubar/Projects/Educational_courses_2026/Krok_po_kroku_2/czytanie'
 const argFrom = process.argv.indexOf('--from')
@@ -12,12 +12,18 @@ const from = argFrom > 0 ? process.argv[argFrom + 1] : DEFAULT
 const root = new URL('..', import.meta.url).pathname
 
 const md5 = (file) => createHash('md5').update(readFileSync(file)).digest('hex')
+const listFiles = (dir) => readdirSync(dir, { withFileTypes: true }).filter((d) => !d.name.startsWith('.'))
+  .flatMap((d) => (d.isDirectory() ? listFiles(join(dir, d.name)) : [join(dir, d.name)]))
+const record = () => {
+  const base = join(root, 'content')
+  const lines = ['teksty', 'audio'].flatMap((dir) => listFiles(join(base, dir))).map((f) => relative(base, f)).sort().map((f) => `${md5(join(base, f))}  ${f}`)
+  writeFileSync(join(base, 'SOURCE.md5'), `${lines.join('\n')}\n`)
+  console.log(`content/SOURCE.md5: ${lines.length} файлів`)
+}
 
 // --md5-only: after an approved edit in content/, record the new state without copying anything.
 if (process.argv.includes('--md5-only')) {
-  const lines = ['teksty', 'audio'].flatMap((dir) => readdirSync(join(root, 'content', dir)).filter((f) => !f.startsWith('.')).sort().map((f) => `${md5(join(root, 'content', dir, f))}  ${dir}/${f}`))
-  writeFileSync(join(root, 'content', 'SOURCE.md5'), `${lines.join('\n')}\n`)
-  console.log(`content/SOURCE.md5: ${lines.length} файлів`)
+  record()
   process.exit(0)
 }
 
@@ -26,16 +32,9 @@ if (!existsSync(join(from, 'teksty'))) {
   process.exit(1)
 }
 
-const lines = []
-for (const [dir, pattern] of [['teksty', /^\d\d-[a-z-]+\.md$/], ['audio', /^\d\d-(gama|pasaze|utwor)\.(mp3|align\.json)$/]]) {
-  const target = join(root, 'content', dir)
-  mkdirSync(target, { recursive: true })
-  const files = readdirSync(join(from, dir)).filter((f) => pattern.test(f)).sort()
-  for (const file of files) {
-    copyFileSync(join(from, dir, file), join(target, file))
-    lines.push(`${md5(join(target, file))}  ${dir}/${file}`)
-  }
-  console.log(`${dir}: ${files.length}`)
-}
-writeFileSync(join(root, 'content', 'SOURCE.md5'), `${lines.join('\n')}\n`)
-console.log(`content/SOURCE.md5: ${lines.length} файлів`)
+const target = join(root, 'content', 'teksty')
+mkdirSync(target, { recursive: true })
+const files = readdirSync(join(from, 'teksty')).filter((f) => /^\d\d-[a-z-]+\.md$/.test(f)).sort()
+for (const file of files) copyFileSync(join(from, 'teksty', file), join(target, file))
+console.log(`teksty: ${files.length}`)
+record()

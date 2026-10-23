@@ -43,9 +43,9 @@ function pwa(base: string): Plugin {
       const precache = [...new Set(['./', ...files, 'manifest.webmanifest', DATA, ...ICONS])]
       const data = JSON.parse(readFileSync(new URL(`./public/${DATA}`, import.meta.url), 'utf8')) as {
         textsMd5: string
-        exercises: { sections: Record<string, { audio: string | null }> }[]
+        exercises: { sections: Record<string, { audio: string | null; alt: Record<string, { audio: string }> }> }[]
       }
-      const audio = data.exercises.flatMap((e) => Object.values(e.sections).map((s) => s.audio).filter(Boolean))
+      const audio = data.exercises.flatMap((e) => Object.values(e.sections).flatMap((s) => [s.audio, ...Object.values(s.alt).map((v) => v.audio)]).filter(Boolean))
       const source = readFileSync(new URL('./src/pwa/sw-template.js', import.meta.url), 'utf8')
         .replace('__PRECACHE__', JSON.stringify(precache))
         .replace('__AUDIO__', JSON.stringify(audio))

@@ -344,3 +344,12 @@ progress { width: 100%; max-width: 420px; height: 12px; }
   .session .step-actions .compare { justify-content: stretch; }
   .session .step-actions .compare .button { flex: 1; }
 }
+
+/* «Запис себе» */
+.self-record { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.self-record .button[aria-pressed='true'] { background: var(--primary-soft); font-weight: 700; }
+.self-record p.meta { flex-basis: 100%; margin: 0; font-size: 15px; }
+.rec { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--marked); font-variant-numeric: tabular-nums; }
+.rec-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--marked); animation: rec 1s ease-in-out infinite alternate; }
+@keyframes rec { to { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }

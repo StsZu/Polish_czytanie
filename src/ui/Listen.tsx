@@ -1,10 +1,12 @@
 // «Слухати текст»: the only screen where the recording plays before the reader's own attempt —
-// to get to know a text. The sounding word is highlighted; a tap on a word plays it.
+// to get to know a text. The sounding word is highlighted; a tap plays the word in the gama, its line in pasaże,
+// its sentence in utwór.
 import { useEffect, useState } from 'react'
 import type { Exercise, SectionKey } from '../contracts.ts'
 import { SECTIONS } from '../contracts.ts'
 import { prefetchExercise } from '../core/audio/cache.ts'
 import { AudioUnavailable, player } from '../core/audio/player.ts'
+import { tapRange } from './session/common.tsx'
 import { FOCUS_BY_SECTION, ReadingText } from './text/ReadingText.tsx'
 
 export const SECTION_LABEL: Record<SectionKey, string> = { gama: 'Гама', pasaze: 'Пасажі', utwor: 'Твір' }
@@ -54,8 +56,8 @@ export function Listen({ exercise, onRecord }: { exercise: Exercise; onRecord?: 
 
   const playAll = () => run(() => player().playSection({ onWord: setCurrent }))
   const playWord = (i: number) => {
-    const w = data.words[i]
-    void run(() => player().playRange(w.od, w.do, { onWord: () => setCurrent(i) }))
+    const [first, last] = tapRange(data, section, i)
+    void run(() => player().playRange(data.words[first].od, data.words[last].do, { onWord: (w) => setCurrent(Math.max(first, Math.min(last, w))) }))
   }
 
   return (

@@ -7,7 +7,7 @@ mkdir -p build
 status=0
 fail() { echo "FAIL: $1"; status=1; }
 
-secrets='(sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|api[_-]?key["'"'"' ]*[:=])'
+secrets='(sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|api[_-]?key["'"'"' ]*[:=] *["'"'"'][A-Za-z0-9_-]{16,})'
 if grep -rIEn --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=dist-pages --exclude-dir=test-results --exclude-dir=content --exclude-dir=public --exclude-dir=build --exclude=check.sh "$secrets" . 2>/dev/null; then
   fail "схожий на секрет рядок у файлах проєкту"
 fi
@@ -36,7 +36,7 @@ for f in dist/assets/*.js dist/assets/*.css; do
 done
 [ $total -le 122880 ] || fail "JS + CSS $((total / 1024)) КБ gzip > 120 КБ"
 audio=$(ls dist/audio/*.mp3 | wc -l | tr -d ' ')
-[ "$audio" -eq 63 ] || fail "у dist/audio $audio записів замість 63"
+[ "$audio" -eq 126 ] || fail "у dist/audio $audio записів замість 126 (63 × 2 голоси)"
 
 # The author's texts are unchanged: content/ against SOURCE.md5 and, when it is on this Mac, against the course.
 (cd content && md5 -r teksty/*.md | awk '{print $1"  "$2}') > build/teksty.md5

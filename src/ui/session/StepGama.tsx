@@ -4,16 +4,33 @@ import { useEffect, useState } from 'react'
 import { Legend } from '../Listen.tsx'
 import { ReadingText } from '../text/ReadingText.tsx'
 import { useStore } from '../store.tsx'
-import { useKeys, useSectionAudio, useSelfRecording, useWordHelp } from './common.tsx'
+import { formatTime, useKeys, useSectionAudio, useSelfRecording, useWordHelp } from './common.tsx'
 import type { SessionStepProps } from './Session.tsx'
 
-export function SelfCompare({ rec, onDictor }: { rec: ReturnType<typeof useSelfRecording>; onDictor: () => void }) {
-  if (!rec.active) return rec.denied ? <p className="meta">Мікрофон недоступний: запис себе вимкнено.</p> : null
+/**
+ * «Запис себе» in a step (FR-19): the switch, the recording indicator while the reader reads, and after «Перевір»
+ * «Я», «Диктор» and «Я → Диктор» to compare.
+ */
+export function SelfRecord({ rec, checked, onDictor }: { rec: ReturnType<typeof useSelfRecording>; checked: boolean; onDictor: () => void }) {
+  const { settings, updateSettings } = useStore()
   return (
-    <span className="compare">
-      <button type="button" className="button" onClick={rec.playMine} disabled={!rec.url} data-testid="playMine">Я</button>
-      <button type="button" className="button" onClick={onDictor} data-testid="playDictor">Диктор</button>
-    </span>
+    <div className="self-record" data-testid="selfRecord">
+      <button type="button" className="button" aria-pressed={settings.recordSelf} onClick={() => void updateSettings({ recordSelf: !settings.recordSelf })} data-testid="recordToggle">
+        {settings.recordSelf ? 'Запис себе: увімкнено' : 'Записувати себе'}
+      </button>
+      {rec.recording && <span className="rec" role="status" data-testid="recording"><span className="rec-dot" aria-hidden="true" />Запис {formatTime(rec.seconds)}</span>}
+      {checked && rec.url && (
+        <span className="compare">
+          <button type="button" className="button" onClick={() => rec.playMine()} data-testid="playMine">Я</button>
+          <button type="button" className="button" onClick={onDictor} data-testid="playDictor">Диктор</button>
+          <button type="button" className="button" onClick={() => rec.playMine(onDictor)} data-testid="playBoth">Я → Диктор</button>
+        </span>
+      )}
+      {rec.denied && <span className="meta">Мікрофон недоступний: дозвольте його в налаштуваннях Safari, щоб записувати себе.</span>}
+      {rec.active && rec.asking && <span className="meta" data-testid="micAsking">Чекаю дозволу на мікрофон…</span>}
+      {rec.active && !rec.asking && !rec.recording && !rec.url && !checked && <span className="meta">Запис почнеться з наступного показу.</span>}
+      {settings.recordSelf && !rec.denied && <p className="meta">Мікрофон записує, лише поки ви читаєте — до «Перевір». Запис не зберігається й нікуди не надсилається.</p>}
+    </div>
   )
 }
 
@@ -26,14 +43,14 @@ export function StepGama({ exercise, record, addHard, done }: SessionStepProps) 
   const [checked, setChecked] = useState(false)
   const [marked, setMarked] = useState<Set<number>>(new Set())
   const [cursor, setCursor] = useState(-1)
-  const help = useWordHelp(audio, checked)
+  const help = useWordHelp(audio, checked, gama, 'gama')
   const [shownAt, setShownAt] = useState(() => performance.now())
   const [first, last] = gama.units[unit].words
   const lastUnit = unit === gama.units.length - 1
 
   // «Запис себе» starts with the first line and again with every next one.
   useEffect(() => {
-    void rec.start()
+    if (!checked) void rec.start()
   }, [rec.active])
 
   const check = () => {
@@ -112,6 +129,7 @@ export function StepGama({ exercise, record, addHard, done }: SessionStepProps) 
           onLongPress={help.reveal}
         />
       </div>
+      <SelfRecord rec={rec} checked={checked} onDictor={() => void audio.playUnit(unit)} />
       {audio.error && <p className="notice">{audio.error}</p>}
       <div className="step-actions sticky">
         {!checked
@@ -123,7 +141,6 @@ export function StepGama({ exercise, record, addHard, done }: SessionStepProps) 
                 {marked.size ? `Далі, помилок: ${marked.size}` : 'Позначте слова з помилками'} <kbd>Enter</kbd>
               </button>
               <button type="button" className="button" onClick={() => void audio.playUnit(unit)} data-testid="again">Ще раз</button>
-              <SelfCompare rec={rec} onDictor={() => void audio.playUnit(unit)} />
             </>
           )}
       </div>

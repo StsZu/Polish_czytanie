@@ -1,6 +1,6 @@
 // Parts shared by the steps: keys, the recording of a section, «Запис себе», reading with a timer.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Section } from '../../contracts.ts'
+import type { Section, SectionKey } from '../../contracts.ts'
 import { AudioUnavailable, player } from '../../core/audio/player.ts'
 import { SelfRecorder } from '../../core/audio/recorder.ts'
 
@@ -65,16 +65,22 @@ export function useSectionAudio(section: Section) {
   return { playing, current, error, playWords, playUnit, playAll, stop: () => player().stop() }
 }
 
+/** What a tap on a word plays: in the gama the word, in pasaże its line, in utwór its sentence. */
+export function tapRange(section: Section, kind: SectionKey, word: number): [number, number] {
+  return kind === 'gama' ? [word, word] : section.units[section.words[word].line].words
+}
+
 /**
  * Help on touch (FR-20): a long press shows the stress of a word (and its syllables, where the author gave them);
- * a tap on a word shown this way plays it, but only once the reader's own attempt is done.
+ * a tap on a word shown this way plays it (its line, its sentence — `tapRange`), but only once the reader's own
+ * attempt is done.
  */
-export function useWordHelp(audio: { playWords: (first: number, last: number) => Promise<void> }, canPlay: boolean) {
+export function useWordHelp(audio: { playWords: (first: number, last: number) => Promise<void> }, canPlay: boolean, section: Section, kind: SectionKey) {
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set())
   const reveal = useCallback((i: number) => setRevealed((r) => (r.has(i) ? r : new Set(r).add(i))), [])
   const tap = (i: number) => {
     if (!canPlay || !revealed.has(i)) return false
-    void audio.playWords(i, i)
+    void audio.playWords(...tapRange(section, kind, i))
     return true
   }
   return { revealed, reveal, tap }
@@ -85,35 +91,60 @@ export function useSelfRecording(enabled: boolean) {
   const recorder = useRef<SelfRecorder | null>(null)
   const [url, setUrl] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const [since, setSince] = useState<number | null>(null)
+  const [now, setNow] = useState(0)
+  const [asking, setAsking] = useState(false)
   const audio = useRef<HTMLAudioElement | null>(null)
   const active = enabled && SelfRecorder.supported() && !denied
 
   useEffect(() => () => recorder.current?.release(), [])
+  // Switched off: the microphone is released at once.
+  useEffect(() => {
+    if (active) return
+    recorder.current?.release()
+    recorder.current = null
+    setSince(null)
+    setUrl(null)
+  }, [active])
+  useEffect(() => {
+    if (since === null) return
+    const id = setInterval(() => setNow(performance.now()), 250)
+    return () => clearInterval(id)
+  }, [since])
 
   const start = useCallback(async () => {
     setUrl(null)
     if (!active) return
+    setAsking(true)
     try {
       recorder.current ??= new SelfRecorder()
       await recorder.current.start()
+      const t = performance.now()
+      setSince(t)
+      setNow(t)
     } catch {
       setDenied(true)
+    } finally {
+      setAsking(false)
     }
   }, [active])
 
   const stop = useCallback(async () => {
     if (!recorder.current) return
+    setSince(null)
     setUrl(await recorder.current.stop())
   }, [])
 
-  const playMine = useCallback(() => {
+  /** Plays the reader's recording; `then` runs when it has finished (for «Я → Диктор»). */
+  const playMine = useCallback((then?: () => void) => {
     if (!url) return
     audio.current ??= new Audio()
     audio.current.src = url
+    audio.current.onended = then ? () => then() : null
     void audio.current.play().catch(() => {})
   }, [url])
 
-  return { active, denied, url, start, stop, playMine }
+  return { active, denied, asking, url, recording: since !== null, seconds: since === null ? 0 : Math.max(0, (now - since) / 1000), start, stop, playMine }
 }
 
 export function useStopwatch() {

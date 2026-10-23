@@ -20,7 +20,7 @@ export function StepTempo({ exercise, record, addHard, done }: SessionStepProps)
   const [marked, setMarked] = useState<Set<number>>(new Set())
   const [marking, setMarking] = useState(false)
   const audio = useSectionAudio(utwor)
-  const help = useWordHelp(audio, true)
+  const help = useWordHelp(audio, true, utwor, 'utwor')
   const pacer = store.settings.pacerByLevel[exercise.level] ?? pacerStart(exercise.targetWpm)
   const finishedAll = results.length >= MAX_TEMPO
 

@@ -103,6 +103,12 @@ export function SettingsScreen() {
         </div>
       </div>
       <label className="field">
+        <span>Голос диктора</span>
+        <select value={settings.voice} onChange={(e) => set({ voice: e.currentTarget.value })} data-testid="settingsVoice">
+          {store.content.voices.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+        </select>
+      </label>
+      <label className="field">
         <span>Швидкість диктора</span>
         <select value={settings.rate} onChange={(e) => set({ rate: Number(e.currentTarget.value) })} data-testid="settingsRate">
           {[0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2].map((r) => <option key={r} value={r}>{r.toFixed(1).replace('.', ',')}×</option>)}
@@ -114,7 +120,7 @@ export function SettingsScreen() {
       </label>
       <label className="toggle">
         <input type="checkbox" checked={settings.recordSelf} onChange={(e) => set({ recordSelf: e.currentTarget.checked })} data-testid="settingsRecord" />
-        <span>Запис себе: порівнювати «Я / Диктор» (запис лише в пам'яті, нікуди не надсилається)</span>
+        <span>Запис себе в гамі й миттєвому читанні: порівнювати «Я / Диктор» (запис лише в пам'яті, нікуди не надсилається). Перемикається й у самих кроках.</span>
       </label>
 
       <h2>Аудіо без інтернету</h2>

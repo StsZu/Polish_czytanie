@@ -12,7 +12,7 @@ export function StepShadow({ exercise, record, done, stats, player }: SessionSte
   const store = useStore()
   const utwor = exercise.sections.utwor
   const audio = useSectionAudio(utwor)
-  const help = useWordHelp(audio, true)
+  const help = useWordHelp(audio, true, utwor, 'utwor')
   const suggestSkip = exercise.level === 3 && stats.coldWpm !== null && stats.coldWpm >= exercise.targetWpm
   const [forced, setForced] = useState(false)
   const [started, setStarted] = useState<number | null>(null)

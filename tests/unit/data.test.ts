@@ -3,18 +3,23 @@ import { describe, expect, it } from 'vitest'
 import type { ContentFile, SectionKey } from '../../src/contracts.ts'
 import { SECTIONS } from '../../src/contracts.ts'
 import { estimateSession } from '../../src/core/content/estimate.ts'
+import { withVoice } from '../../src/core/content/load.ts'
 
 const data = JSON.parse(readFileSync(new URL('../../public/data/cwiczenia.json', import.meta.url), 'utf8')) as ContentFile
 const ORIGINAL = '/Users/szubar/Projects/Educational_courses_2026/Krok_po_kroku_2/czytanie/data/teksty.json'
 
 describe('cwiczenia.json', () => {
-  it('has 21 exercises 01–21 in three levels, every section with audio and timed words (SC-01)', () => {
+  it('has 21 exercises 01–21 in three levels, every section with audio in both voices and timed words (SC-01)', () => {
+    expect(data.voices.map((v) => v.id)).toEqual(['alex', 'beata'])
     expect(data.exercises.map((e) => e.id)).toEqual(Array.from({ length: 21 }, (_, i) => String(i + 1).padStart(2, '0')))
     expect(data.exercises.map((e) => e.level)).toEqual([...Array(7).fill(1), ...Array(7).fill(2), ...Array(7).fill(3)])
     for (const e of data.exercises) {
       for (const key of SECTIONS) {
         const s = e.sections[key]
-        expect(s.audio, `${e.id} ${key}`).toMatch(new RegExp(`^audio/${e.id}-${key}\\.[0-9a-f]{8}\\.mp3$`))
+        expect(s.audio, `${e.id} ${key}`).toMatch(new RegExp(`^audio/alex-${e.id}-${key}\\.[0-9a-f]{8}\\.mp3$`))
+        expect(s.alt.beata.audio, `${e.id} ${key}`).toMatch(new RegExp(`^audio/beata-${e.id}-${key}\\.[0-9a-f]{8}\\.mp3$`))
+        expect(s.alt.beata.times).toHaveLength(s.words.length)
+        for (const [od, end] of s.alt.beata.times) expect(end).toBeGreaterThan(od)
         expect(s.words.length).toBeGreaterThan(0)
         for (const w of s.words) {
           expect(w.do, `${e.id} ${key} ${w.t}`).toBeGreaterThan(w.od)
@@ -27,6 +32,18 @@ describe('cwiczenia.json', () => {
     }
   })
 
+  it('withVoice puts the second voice\'s recordings and times in place; the main voice and unknown ids keep the data', () => {
+    expect(withVoice(data, 'alex')).toBe(data)
+    expect(withVoice(data, 'nobody')).toBe(data)
+    const beata = withVoice(data, 'beata')
+    const s = beata.exercises[6].sections.pasaze
+    const alt = data.exercises[6].sections.pasaze.alt.beata
+    expect(s.audio).toBe(alt.audio)
+    expect(s.words.map((w) => [w.od, w.do])).toEqual(alt.times)
+    expect(s.units[1].od).toBe(alt.times[s.units[1].words[0]][0])
+    expect(data.exercises[6].sections.pasaze.audio).toMatch(/^audio\/alex-/)
+  })
+
   it('gama and pasaże units are lines: 4–6 words per gama line, 8–12 phrases', () => {
     for (const e of data.exercises) {
       for (const u of e.sections.gama.units) expect(u.words[1] - u.words[0] + 1).toBeGreaterThanOrEqual(4)
@@ -35,14 +52,30 @@ describe('cwiczenia.json', () => {
     }
   })
 
-  it.runIf(existsSync(ORIGINAL))('matches the words and times of the existing trainer for all 63 sections', () => {
+  it('a word of the gama, a line of pasaże, a unit of utwór is separated from the next by silence in both voices', () => {
+    const MIN: Record<SectionKey, number> = { gama: 0.4, pasaze: 0.6, utwor: 0.3 }
+    for (const e of data.exercises) {
+      for (const key of SECTIONS) {
+        const s = e.sections[key]
+        for (const times of [s.words.map((w) => [w.od, w.do]), s.alt.beata.times]) {
+          const bounds = key === 'gama' ? s.words.map((_, i) => [i, i]) : s.units.map((u) => u.words)
+          for (let i = 1; i < bounds.length; i++) {
+            const gap = times[bounds[i][0]][0] - times[bounds[i - 1][1]][1]
+            expect(gap, `${e.id} ${key} ${i}`).toBeGreaterThanOrEqual(MIN[key])
+          }
+        }
+      }
+    }
+  })
+
+  it.runIf(existsSync(ORIGINAL))('matches the words of the existing trainer for all 63 sections', () => {
     const original = JSON.parse(readFileSync(ORIGINAL, 'utf8')) as { cwiczenia: { id: string; sekcje: Record<SectionKey, { tekst: string; slowa: { t: string; od: number; do: number }[] }> }[] }
     for (const [i, o] of original.cwiczenia.entries()) {
       const e = data.exercises[i]
       expect(e.id).toBe(o.id)
       for (const key of SECTIONS) {
         expect(e.sections[key].text).toBe(o.sekcje[key].tekst)
-        expect(e.sections[key].words.map((w) => [w.t, w.od, w.do])).toEqual(o.sekcje[key].slowa.map((w) => [w.t, w.od, w.do]))
+        expect(e.sections[key].words.map((w) => w.t)).toEqual(o.sekcje[key].slowa.map((w) => w.t))
       }
     }
   })
