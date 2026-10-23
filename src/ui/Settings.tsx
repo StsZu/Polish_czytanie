@@ -118,10 +118,6 @@ export function SettingsScreen() {
         <input type="checkbox" checked={settings.pacer} onChange={(e) => set({ pacer: e.currentTarget.checked })} data-testid="settingsPacer" />
         <span>Ведучий у читанні на темп</span>
       </label>
-      <label className="toggle">
-        <input type="checkbox" checked={settings.recordSelf} onChange={(e) => set({ recordSelf: e.currentTarget.checked })} data-testid="settingsRecord" />
-        <span>Запис себе в гамі й миттєвому читанні: порівнювати «Я / Диктор» (запис лише в пам'яті, нікуди не надсилається). Перемикається й у самих кроках.</span>
-      </label>
 
       <h2>Аудіо без інтернету</h2>
       <p className="meta" data-testid="audioState">На пристрої: {cached.size} з 21 вправ ({MB(cachedBytes)} з {MB(totalBytes)}). Аудіо вправи завантажується, коли ви її відкриваєте.</p>

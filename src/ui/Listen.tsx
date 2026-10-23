@@ -67,7 +67,7 @@ export function Listen({ exercise, onRecord }: { exercise: Exercise; onRecord?: 
           {SECTIONS.map((k) => <button key={k} type="button" aria-pressed={section === k} onClick={() => setSection(k)} data-testid={`section-${k}`}>{SECTION_LABEL[k]}</button>)}
         </div>
         {playing
-          ? <button type="button" className="button primary" onClick={() => player().stop()} data-testid="stop">Зупинити</button>
+          ? <button type="button" className="button primary playing" aria-pressed="true" onClick={() => player().stop()} data-testid="stop"><span className="bars" aria-hidden="true"><i /><i /><i /></span>Зупинити</button>
           : <button type="button" className="button primary" onClick={() => void playAll()} data-testid="playAll">Слухати</button>}
       </div>
       {error && <p className="notice" role="alert">{error}</p>}

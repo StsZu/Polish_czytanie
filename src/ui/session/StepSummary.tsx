@@ -34,7 +34,7 @@ export function StepSummary({ exercise, record, stats, exit }: SessionStepProps)
         ))}
       </div>
       <dl className="summary" data-testid="summary">
-        <div><dt>{stats.cold ? 'Холодний темп' : 'Темп розминки'}</dt><dd>{stats.coldWpm !== null ? `${stats.coldWpm} сл/хв` : '—'}</dd></div>
+        {stats.coldWpm !== null && <div><dt>{stats.cold ? 'Темп перевірки' : 'Темп розминки'}</dt><dd>{stats.coldWpm} сл/хв</dd></div>}
         <div><dt>Найкращий темп</dt><dd>{best !== null ? `${best} сл/хв` : '—'} <span className="meta">ціль {exercise.targetWpm}</span></dd></div>
         <div><dt>Самоперевірка</dt><dd>{accuracy !== null ? `${accuracy} % правильно` : '—'}</dd></div>
         <div><dt>Нові важкі слова</dt><dd>{stats.newHard}</dd></div>
@@ -44,7 +44,7 @@ export function StepSummary({ exercise, record, stats, exit }: SessionStepProps)
         <p className="meta">
           {store.levels[exercise.id] < 2
             ? `Рівень 2 — коли темп досягне ${exercise.targetWpm} сл/хв, а самоперевірка дасть ≥ 90 %.`
-            : 'Рівень 3 — холодне читання на цільовому темпі щонайменше через 3 дні після першої сесії.'}
+            : 'Рівень 3 — перевірка темпу на цілі щонайменше через 3 дні після першої сесії.'}
         </p>
       )}
       <div className="step-actions">

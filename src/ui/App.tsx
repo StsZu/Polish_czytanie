@@ -1,9 +1,11 @@
 // The app shell: navigation by hash, the theme and font size, the notices about saving and updates.
 import { useEffect, useState } from 'react'
 import { applyUpdate, onUpdateAvailable } from '../pwa/register.ts'
+import { KeysDialog } from './Dialog.tsx'
 import { Exercises } from './Exercises.tsx'
 import { Listen } from './Listen.tsx'
 import { route, type Route } from './router.ts'
+import { useKeys } from './session/common.tsx'
 import { Session } from './session/Session.tsx'
 import { SettingsScreen } from './Settings.tsx'
 import { StoreProvider, useStore } from './store.tsx'
@@ -12,11 +14,11 @@ import { Discrimination } from './train/Discrimination.tsx'
 import { HardWords } from './train/HardWords.tsx'
 import { Progress } from './train/Progress.tsx'
 
-const TABS: { name: Route['name']; href: string; label: string }[] = [
-  { name: 'today', href: '#/', label: 'Сьогодні' },
-  { name: 'exercises', href: '#/cwiczenia', label: 'Вправи' },
-  { name: 'hard', href: '#/trudne', label: 'Важкі слова' },
+export const TABS: { name: Route['name']; href: string; label: string }[] = [
+  { name: 'exercises', href: '#/', label: 'Підручник' },
   { name: 'discrimination', href: '#/rozroznianie', label: 'Розрізнення' },
+  { name: 'hard', href: '#/trudne', label: 'Важкі слова' },
+  { name: 'today', href: '#/dzis', label: 'Сьогодні' },
   { name: 'progress', href: '#/postep', label: 'Прогрес' },
   { name: 'settings', href: '#/ustawienia', label: 'Налаштування' },
 ]
@@ -38,7 +40,16 @@ function Shell() {
   const store = useStore()
   const r = useRoute()
   const [update, setUpdate] = useState(false)
+  const [keysHelp, setKeysHelp] = useState(false)
   useEffect(() => onUpdateAvailable(setUpdate), [])
+  // Key hints are hidden on touch until a hardware keyboard is used.
+  useEffect(() => {
+    const seen = (event: KeyboardEvent) => {
+      if (event.key !== 'Unidentified') document.documentElement.dataset.keys = ''
+    }
+    document.addEventListener('keydown', seen, { once: true })
+    return () => document.removeEventListener('keydown', seen)
+  }, [])
 
   useEffect(() => {
     const forced = new URLSearchParams(location.search).get('theme')
@@ -50,6 +61,10 @@ function Shell() {
 
   const exercise = 'id' in r ? store.exercise(r.id) : undefined
   const inSession = r.name === 'session' && exercise
+
+  const tabKeys: Record<string, () => void> = { '?': () => setKeysHelp(true), 'Shift+Slash': () => setKeysHelp(true) }
+  if (!inSession) TABS.forEach((t, i) => (tabKeys[`Alt+Digit${i + 1}`] = () => (location.hash = t.href)))
+  useKeys(tabKeys)
 
   return (
     <div className="app">
@@ -71,15 +86,17 @@ function Shell() {
           {TABS.map((t) => (
             <a key={t.name} href={t.href} className="tab" aria-current={r.name === t.name || (t.name === 'exercises' && r.name === 'listen') ? 'page' : undefined} data-testid={`tab-${t.name}`}>{t.label}</a>
           ))}
+          <button type="button" className="button icon keys-button" onClick={() => setKeysHelp(true)} aria-label="Клавіші" data-testid="keysButton">?</button>
         </nav>
       )}
+      {keysHelp && <KeysDialog onClose={() => setKeysHelp(false)} />}
       <main className={`main${inSession ? ' session-main' : ''}`}>
         {r.name === 'today' && <Today />}
         {r.name === 'exercises' && <Exercises />}
         {r.name === 'listen' && exercise && (
           <>
             <div className="screen-head">
-              <a className="button icon" href="#/cwiczenia" aria-label="Назад до вправ">←</a>
+              <a className="button icon" href="#/" aria-label="Назад до підручника">←</a>
               <h1 lang="pl">{exercise.id}. {exercise.title}</h1>
             </div>
             <p className="meta">{exercise.goal}</p>
@@ -91,7 +108,7 @@ function Shell() {
         {r.name === 'discrimination' && <Discrimination />}
         {r.name === 'progress' && <Progress />}
         {r.name === 'settings' && <SettingsScreen />}
-        {'id' in r && !exercise && <p className="notice">Такої вправи немає. <a href="#/cwiczenia">До вправ</a></p>}
+        {'id' in r && !exercise && <p className="notice">Такої вправи немає. <a href="#/">До підручника</a></p>}
       </main>
     </div>
   )

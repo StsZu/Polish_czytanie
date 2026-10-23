@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import type { Exercise, HardItem, Section } from '../../contracts.ts'
 import { dayOf } from '../../core/progress/days.ts'
 import { dueToday } from '../../core/progress/srs.ts'
-import { useKeys, useSectionAudio } from '../session/common.tsx'
+import { PlayButton, useKeys, useSectionAudio } from '../session/common.tsx'
 import { useStore } from '../store.tsx'
 import { ReadingText } from '../text/ReadingText.tsx'
 
@@ -30,7 +30,7 @@ function Card({ e, item, onAnswer }: { e: Exercise; item: HardItem; onAnswer: (c
   const contextAudio = useSectionAudio(e.sections.utwor)
   const [checked, setChecked] = useState(false)
   const [answered, setAnswered] = useState<boolean | null>(null)
-  const play = () => (item.word === null ? audio.playUnit(item.unit) : audio.playWords(item.word, item.word))
+  const play = () => (item.word === null ? audio.playUnit(item.unit, 'card') : audio.playWords(item.word, item.word, 'card'))
   const check = () => {
     setChecked(true)
     void play()
@@ -58,7 +58,7 @@ function Card({ e, item, onAnswer }: { e: Exercise; item: HardItem; onAnswer: (c
           <>
             <button type="button" className="button primary big" onClick={() => answer(true)} data-testid="yes">Так <kbd>1</kbd></button>
             <button type="button" className="button big" onClick={() => answer(false)} data-testid="no">Ні <kbd>2</kbd></button>
-            <button type="button" className="button" onClick={() => void play()} data-testid="again">Ще раз</button>
+            <PlayButton playing={audio.playingFrom('card')} onPlay={() => void play()} onStop={audio.stop} hint="пробіл" testId="again">Ще раз</PlayButton>
           </>
         )}
       </div>
@@ -66,7 +66,7 @@ function Card({ e, item, onAnswer }: { e: Exercise; item: HardItem; onAnswer: (c
         <div className="context" data-testid="context">
           <p className="meta">У тексті:</p>
           <ReadingText section={e.sections.utwor} kind="utwor" units={[context]} current={contextAudio.current} />
-          <button type="button" className="button" onClick={() => void contextAudio.playUnit(context)} data-testid="playContext">Слухати речення</button>
+          <PlayButton playing={contextAudio.playingFrom('context')} onPlay={() => void contextAudio.playUnit(context, 'context')} onStop={contextAudio.stop} testId="playContext">Слухати речення</PlayButton>
         </div>
       )}
     </div>

@@ -12,6 +12,8 @@ import { addMistake, answer, hardKey } from '../core/progress/srs.ts'
 export interface Store {
   content: ContentFile
   exercise(id: string): Exercise | undefined
+  /** The exercise as recorded by another narrator voice (for «Розрізнення» in both voices). */
+  exerciseIn(voice: string, id: string): Exercise | undefined
   attempts: Attempt[]
   hard: HardItem[]
   sessions: SessionRecord[]
@@ -141,6 +143,7 @@ export function StoreProvider({ children, fallback }: { children: ReactNode; fal
   const value = useMemo<Store | null>(() => content && {
     content,
     exercise: (id: string) => content.exercises.find((e) => e.id === id),
+    exerciseIn: (voice: string, id: string) => withVoice(rawContent!, voice).exercises.find((e) => e.id === id),
     attempts,
     hard,
     sessions,
@@ -155,7 +158,7 @@ export function StoreProvider({ children, fallback }: { children: ReactNode; fal
     saveSession,
     reload: load,
     flush: drain,
-  }, [content, attempts, hard, sessions, settings, levels, saveError, drain, record, addHard, answerHard, updateSettings, saveSession, load])
+  }, [content, rawContent, attempts, hard, sessions, settings, levels, saveError, drain, record, addHard, answerHard, updateSettings, saveSession, load])
 
   if (!value) return <>{fallback(error)}</>
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

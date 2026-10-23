@@ -10,6 +10,14 @@ export function coldAllowed(attempts: Attempt[], exercise: string, day: string):
   return !attempts.some((a) => a.exercise === exercise && a.day === day && PRACTICE.includes(a.kind))
 }
 
+/**
+ * Whether the exercise was practised on an earlier day. The tempo check (step 0) opens a session only then:
+ * reading an unknown text cold on the first day only frustrates a beginner.
+ */
+export function practicedBefore(attempts: Attempt[], exercise: string, day: string): boolean {
+  return attempts.some((a) => a.exercise === exercise && a.day < day && PRACTICE.includes(a.kind) && a.kind !== 'listen')
+}
+
 export const MIN_SECONDS = 5
 export const MAX_WPM = 300
 

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Attempt, HardItem } from '../../src/contracts.ts'
 import { DEFAULT_SETTINGS } from '../../src/contracts.ts'
-import { coldAllowed, dayAccuracy, minutesThisWeek, readingPace, streak } from '../../src/core/progress/attempts.ts'
+import { coldAllowed, dayAccuracy, practicedBefore, minutesThisWeek, readingPace, streak } from '../../src/core/progress/attempts.ts'
 import { BackupError, createBackup, mergeBackup, parseBackup, replaceWith } from '../../src/core/progress/backup.ts'
 import { addAttempt, allAttempts, allHard, clearAll, getSettings, putHard, replaceAll, resetConnection, storageError } from '../../src/core/progress/db.ts'
 import { addDays, dayOf, daysBetween } from '../../src/core/progress/days.ts'
@@ -33,6 +33,19 @@ describe('attempts', () => {
     expect(coldAllowed([at('2026-10-22', 'cold')], '07', '2026-10-22')).toBe(false)
     expect(coldAllowed([{ ...at('2026-10-22', 'tempo'), exercise: '08' }], '07', '2026-10-22')).toBe(true)
     expect(coldAllowed([at('2026-10-22', 'rating')], '07', '2026-10-22')).toBe(true)
+  })
+
+  it('the tempo check opens a session only after practice on an earlier day; listening alone does not count', () => {
+    expect(practicedBefore([], '07', '2026-10-22')).toBe(false)
+    expect(practicedBefore([at('2026-10-22', 'gama')], '07', '2026-10-22')).toBe(false)
+    expect(practicedBefore([at('2026-10-21', 'listen')], '07', '2026-10-22')).toBe(false)
+    expect(practicedBefore([at('2026-10-21', 'gama')], '07', '2026-10-22')).toBe(true)
+    expect(practicedBefore([{ ...at('2026-10-21', 'gama'), exercise: '08' }], '07', '2026-10-22')).toBe(false)
+  })
+
+  it('level 1 comes with any session work, not only a cold reading', () => {
+    expect(masteryLevel([at('2026-10-22', 'listen')], '07', 60)).toBe(0)
+    expect(masteryLevel([at('2026-10-22', 'gama', { correct: 5, total: 5 })], '07', 60)).toBe(1)
   })
 
   it('pace: words per minute, too short or too fast is not saved', () => {

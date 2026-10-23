@@ -1,4 +1,5 @@
-// Step 0: the utwór read cold, before any practice of the day (FR-11). Its pace is the honest measure.
+// Step 0, the tempo check: the utwór read cold on a later day, before any practice of that day (FR-11).
+// Its pace is the honest measure: whether the skill stayed overnight.
 import { useState } from 'react'
 import { readingPace } from '../../core/progress/attempts.ts'
 import { TimedReading } from './TimedReading.tsx'
@@ -30,14 +31,14 @@ export function StepCold({ exercise, record, done, coldToday }: SessionStepProps
     <div className="step" data-testid="stepCold">
       <p className="lead">
         {coldToday
-          ? 'Прочитайте твір уголос без підготовки — так, ніби бачите його вперше. Це холодне читання: за ним видно, чи стає навичка автоматичною.'
-          : 'Сьогодні ви вже читали або слухали цю вправу, тож це розминка: темп піде в історію, але не як холодне читання.'}
+          ? 'Ви вже тренували цей твір раніше. Прочитайте його вголос без підготовки, до будь-якого тренування сьогодні: за цим темпом видно, чи навичка лишилася з учора.'
+          : 'Це розминка: вправу сьогодні вже читали чи слухали або ще не тренували в інші дні. Темп піде в історію, але не як перевірка.'}
         {!coldToday && <span className="chip" data-testid="warmup">розминка</span>}
       </p>
       {result
         ? (
           <>
-            <PaceResult wpm={result.wpm} target={exercise.targetWpm} label={coldToday ? 'Холодний темп' : 'Темп розминки'} />
+            <PaceResult wpm={result.wpm} target={exercise.targetWpm} label={coldToday ? 'Темп перевірки' : 'Темп розминки'} />
             <div className="step-actions">
               <button type="button" className="button primary big" onClick={done} data-testid="next">Далі <kbd>Enter</kbd></button>
               <button type="button" className="button" onClick={() => setResult(null)} data-testid="again">Ще раз</button>

@@ -36,20 +36,13 @@ test('a full session of 07 by keyboard only, no sound before «Перевір» 
   const errors = await watchErrors(page)
   await page.addInitScript(PLAYS)
   await page.goto('./')
+  await expect(page.getByTestId('exercises')).toBeVisible()
+  await page.goto('./#/dzis')
   await expect(page.getByTestId('today')).toBeVisible()
   await page.screenshot({ path: `build/visual/today-empty-${info.project.name}.png` })
   await page.getByTestId('startNext').click()
-  // The first unmastered exercise is 01; go to 07 for this test.
+  // The first unmastered exercise is 01; go to 07 for this test. A first session starts with the rule.
   await page.goto('./#/c/07')
-  await atStep(page, 0)
-
-  // 0 — cold reading
-  await page.keyboard.press('Space')
-  await expect(page.getByTestId('reading')).toBeVisible()
-  await page.waitForTimeout(13_000)
-  await page.keyboard.press('Space')
-  await expect(page.getByTestId('paceResult')).toContainText('Холодний темп')
-  await page.keyboard.press('Enter')
 
   // 1 — rule
   await atStep(page, 1)
@@ -112,6 +105,8 @@ test('a full session of 07 by keyboard only, no sound before «Перевір» 
   await expect(page.getByTestId('summary')).toContainText('почато')
   await page.screenshot({ path: `build/visual/session-summary-${info.project.name}.png` })
   await page.keyboard.press('Enter')
+  await expect(page.getByTestId('exercises')).toBeVisible()
+  await page.keyboard.press('Alt+Digit4')
   await expect(page.getByTestId('today')).toBeVisible()
   await expect(page.getByTestId('stats')).toContainText('1')
   expect(errors).toEqual([])
@@ -121,10 +116,7 @@ test('a session by touch only: words marked in the gama become hard words the ne
   const errors = await watchErrors(page)
   await page.addInitScript(PLAYS)
   await page.goto('./#/c/07')
-  await page.getByTestId('start').tap()
-  await page.waitForTimeout(13_000)
-  await page.getByTestId('finish').tap()
-  await page.getByTestId('next').tap()
+  await atStep(page, 1)
   await page.getByTestId('next').tap()
   await atStep(page, 2)
   const before = await plays(page)
@@ -137,17 +129,29 @@ test('a session by touch only: words marked in the gama become hard words the ne
   await page.getByTestId('nextWithMistakes').tap()
   await expect(page.getByTestId('unitCount')).toContainText('Рядок 2 з 7')
   await page.getByTestId('exit').tap()
-  await expect(page.getByTestId('today')).toBeVisible()
+  await expect(page.getByTestId('exercises')).toBeVisible()
   await noHorizontalScroll(page)
 
-  // The same day: hard words are due tomorrow; a new session's step 0 is a warm-up.
+  // The same day: hard words are due tomorrow; the session starts with the rule again, step 0 is a warm-up.
+  await page.goto('./#/dzis')
   await expect(page.getByTestId('hardDue')).toContainText('На сьогодні немає')
   await page.goto('./#/c/07')
+  await atStep(page, 1)
+  await page.getByTestId('back').tap()
   await expect(page.getByTestId('warmup')).toBeVisible()
 
-  // The next day: Kasia is due.
+  // The next day: the session opens with the tempo check, and Kasia is due.
   await page.clock.setFixedTime(new Date(Date.now() + 86_400_000 + 3_600_000))
-  await page.goto('./#/')
+  await page.goto('./#/c/07')
+  await atStep(page, 0)
+  await expect(page.getByTestId('stepTitle')).toHaveText('Перевірка темпу')
+  await expect(page.getByTestId('warmup')).toHaveCount(0)
+  await page.getByTestId('start').tap()
+  await page.waitForTimeout(13_000)
+  await page.getByTestId('finish').tap()
+  await expect(page.getByTestId('paceResult')).toContainText('Темп перевірки')
+  await page.getByTestId('exit').tap()
+  await page.goto('./#/dzis')
   await expect(page.getByTestId('hardDue')).toContainText('1 на сьогодні')
   await page.getByTestId('tab-hard').tap()
   await expect(page.getByTestId('hardCard')).toContainText('Kasia')
@@ -161,7 +165,7 @@ test('a session by touch only: words marked in the gama become hard words the ne
   await page.getByTestId('next').tap()
   await expect(page.getByTestId('hardDone')).toContainText('1 з 1')
 
-  // Progress: one cold reading → one point.
+  // Progress: one tempo check → one point.
   await page.getByTestId('tab-progress').tap()
   await page.getByTestId('progressExercise').selectOption('07')
   await expect(page.getByTestId('point-s-exercise')).toHaveCount(1)
@@ -232,7 +236,7 @@ test('the copy: export, clear, import gives the same data; a damaged file lists 
 
 test('every screen fits both orientations without horizontal scroll', async ({ page }, info) => {
   const errors = await watchErrors(page)
-  for (const [hash, id] of [['#/', 'today'], ['#/cwiczenia', 'exercises'], ['#/trudne', 'hardWords'], ['#/rozroznianie', 'discrimination'], ['#/postep', 'progress'], ['#/ustawienia', 'settings'], ['#/sluchaj/21', 'listen'], ['#/c/21', 'session']] as const) {
+  for (const [hash, id] of [['#/', 'exercises'], ['#/dzis', 'today'], ['#/trudne', 'hardWords'], ['#/rozroznianie', 'discrimination'], ['#/postep', 'progress'], ['#/ustawienia', 'settings'], ['#/sluchaj/21', 'listen'], ['#/c/21', 'session']] as const) {
     await page.goto(`./${hash}`)
     await expect(page.getByTestId(id)).toBeVisible()
     await noHorizontalScroll(page)
@@ -366,16 +370,15 @@ test('a tap plays the word in the gama, the whole line in pasaże, the sentence 
   expect(await lit()).toEqual(['Kasia', 'przy', 'kasie', 'płaci', 'za', 'kaszę'])
 })
 
-test('«Записувати себе» is in the step: the switch, then the recording or why it cannot record', async ({ page }) => {
+test('«Запис» is in the step: it asks for the microphone, and can be cancelled', async ({ page }) => {
   await page.goto('./#/c/07/krok/2')
-  const toggle = page.getByTestId('recordToggle')
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByTestId('selfRecord')).toContainText(/Запис \d:\d\d|Мікрофон недоступний|Чекаю дозволу на мікрофон/)
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-  await expect(page.getByTestId('recording')).toHaveCount(0)
+  await page.getByTestId('record').click()
+  // WebKit in tests never answers the permission request; on the iPad Safari asks.
+  await expect(page.getByTestId('selfRecord')).toContainText(/Чекаю дозволу на мікрофон|Мікрофон недоступний|приготуйтеся/)
+  if (await page.getByTestId('recordCancel').count()) {
+    await page.keyboard.press('r')
+    await expect(page.getByTestId('record')).toBeVisible()
+  }
 })
 
 test('the narrator voice is chosen in the settings and the recordings follow it', async ({ page }) => {
@@ -386,4 +389,58 @@ test('the narrator voice is chosen in the settings and the recordings follow it'
   await request
   await page.goto('./#/ustawienia')
   await expect(page.getByTestId('settingsVoice')).toHaveValue('beata')
+})
+
+test('«‹ Назад», «Пропустити ›», the step bar and ⇧ ← → move between the steps', async ({ page }) => {
+  await page.goto('./#/c/07')
+  await atStep(page, 1)
+  await page.getByTestId('skip').click()
+  await atStep(page, 2)
+  await page.getByTestId('back').click()
+  await atStep(page, 1)
+  await page.getByTestId('goStep-5').click()
+  await atStep(page, 5)
+  await page.keyboard.press('Shift+ArrowLeft')
+  await atStep(page, 4)
+  await page.keyboard.press('Shift+ArrowRight')
+  await atStep(page, 5)
+  await page.getByTestId('goStep-0').click()
+  await expect(page.getByTestId('back')).toBeDisabled()
+})
+
+test('the menu: Підручник first, a card has «Виконати вправу»; Alt + digit and «?»', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.locator('.tabs .tab')).toHaveText(['Підручник', 'Розрізнення', 'Важкі слова', 'Сьогодні', 'Прогрес', 'Налаштування'])
+  await expect(page.getByTestId('tab-exercises')).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByTestId('card-07')).toContainText('Виконати вправу')
+  await page.keyboard.press('Alt+Digit2')
+  await expect(page.getByTestId('discrimination')).toBeVisible()
+  await page.keyboard.press('Shift+Slash')
+  await expect(page.getByTestId('keysHelp')).toContainText('«Запис» / «Стоп»')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('keysHelp')).toHaveCount(0)
+  await page.goto('./')
+  await page.getByTestId('open-07').click()
+  await atStep(page, 1)
+})
+
+test('«Що прозвучало?» plays the word in the other voice too, by button and by V', async ({ page }) => {
+  await page.goto('./#/c/07/krok/3')
+  await expect(page.getByTestId('voice-alex')).toHaveAttribute('aria-pressed', 'true')
+  const beata = page.waitForRequest(/audio\/beata-07-gama\./)
+  await page.getByTestId('voice-beata').click()
+  await beata
+  await expect(page.getByTestId('voice-beata')).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('v')
+  await expect(page.getByTestId('voice-alex')).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('a button that plays shows it while it sounds and stops on a tap', async ({ page }) => {
+  await page.goto('./#/c/07/krok/2')
+  await page.getByTestId('check').click()
+  const again = page.getByTestId('again')
+  await expect(again).toHaveAttribute('aria-pressed', 'true')
+  await expect(again).toHaveClass(/playing/)
+  await again.click()
+  await expect(again).toHaveAttribute('aria-pressed', 'false')
 })

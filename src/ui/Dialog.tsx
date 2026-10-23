@@ -118,3 +118,40 @@ export function TypedConfirmDialog({ title, text, word, confirmLabel, onConfirm,
     </Modal>
   )
 }
+
+export const KEYS: [string[], string][] = [
+  [['Alt', '1…6'], 'розділи меню: Підручник, Розрізнення, Важкі слова, Сьогодні, Прогрес, Налаштування'],
+  [['пробіл'], '«Перевір», «Показати», «Почати / Готово», «Слухати ще»'],
+  [['Enter'], '«Далі»'],
+  [['1', '2', '3'], '«Так / Ні», варіанти відповіді, самооцінка'],
+  [['⇧', '←'], 'попередній крок вправи'],
+  [['⇧', '→'], 'наступний крок вправи'],
+  [['←', '→'], 'у гамі після «Перевір» — вибрати слово'],
+  [['X'], 'позначити вибране слово як помилку'],
+  [['R'], '«Запис» / «Стоп»'],
+  [['M'], '«Я» — ваш запис'],
+  [['D'], '«Диктор»'],
+  [['B'], '«Я → Диктор»'],
+  [['V'], 'інший голос у «Що прозвучало?»'],
+  [['Esc'], 'зупинити звук; якщо тихо — вийти з вправи'],
+  [['?'], 'цей список'],
+]
+
+export function KeysDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal title="Клавіші" onClose={onClose}>
+      <dl className="keys-help" data-testid="keysHelp">
+        {KEYS.map(([keys, what]) => (
+          <div key={what} style={{ display: 'contents' }}>
+            <dt>{keys.map((k) => <kbd key={k}>{k}</kbd>)}</dt>
+            <dd>{what}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="meta">Літери працюють і з українською розкладкою.</p>
+      <div className="dialog-actions">
+        <button type="button" className="button primary" onClick={onClose} data-autofocus data-testid="dialogClose">Зрозуміло</button>
+      </div>
+    </Modal>
+  )
+}

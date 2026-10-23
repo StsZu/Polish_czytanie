@@ -5,9 +5,10 @@ import { daysBetween } from './days.ts'
 
 export const ACCURACY_MIN = 0.9
 export const DAYS_BEFORE_LEVEL_3 = 3
+const SESSION_WORK: Attempt['kind'][] = ['cold', 'warmup', 'gama', 'flash', 'quiz', 'shadow', 'tempo']
 
 /**
- * 0 — no session; 1 — a cold reading; 2 — on some day the best pace reached the target and the self-checks
+ * 0 — no session; 1 — any reading or self-check in a session; 2 — on some day the best pace reached the target and the self-checks
  * of that day were ≥ 90 % right; 3 — a cold reading at the target on a day ≥ 3 calendar days after the first
  * session, and that day's self-rating was not «Не вийшло».
  */
@@ -29,5 +30,5 @@ export function masteryLevel(all: Attempt[], exercise: string, target: number): 
   })
   if (level2) return 2
 
-  return attempts.some((a) => a.kind === 'cold' || a.kind === 'warmup') ? 1 : 0
+  return attempts.some((a) => SESSION_WORK.includes(a.kind)) ? 1 : 0
 }

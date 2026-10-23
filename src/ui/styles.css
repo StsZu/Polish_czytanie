@@ -208,7 +208,8 @@ a.card { color: inherit; text-decoration: none; }
 h1 { font-size: 26px; margin: 8px 0 12px; }
 h2 { font-size: 19px; margin: 24px 0 8px; }
 kbd { font: 12px/1 ui-monospace, Menlo, monospace; padding: 2px 5px; border: 1px solid currentColor; border-radius: 5px; opacity: 0.7; margin-left: 6px; }
-@media (pointer: coarse) { kbd { display: none; } }
+/* On touch the key hints appear once a hardware keyboard has been used (App sets data-keys). */
+@media (pointer: coarse) { :root:not([data-keys]) kbd { display: none; } }
 .chip { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 12px; background: var(--surface-2); font-size: 14px; }
 .lead { font-size: 18px; max-width: 65ch; }
 .result { font-size: 18px; }
@@ -238,9 +239,8 @@ kbd { font: 12px/1 ui-monospace, Menlo, monospace; padding: 2px 5px; border: 1px
 
 /* Exercises */
 .card { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-.card-top { display: flex; flex: 1; }
-.card-main { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; color: inherit; text-decoration: none; min-width: 0; }
-.card-side { display: flex; align-items: center; padding: 0 14px; border-left: 1px solid var(--line); color: var(--primary); text-decoration: none; font-weight: 600; min-width: 44px; }
+.card-main { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px 8px; min-width: 0; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 14px; }
 .card-steps { border-top: 1px solid var(--line); }
 .card-steps summary { min-height: 44px; display: flex; align-items: center; padding: 0 16px; color: var(--primary); font-weight: 600; cursor: pointer; }
 .card-steps ol { margin: 0; padding: 0 16px 10px 40px; }
@@ -253,9 +253,13 @@ kbd { font: 12px/1 ui-monospace, Menlo, monospace; padding: 2px 5px; border: 1px
 .session-title h1 { margin: 0; font-size: 22px; }
 .session-title h1:focus { outline: none; }
 .progress-steps { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; list-style: none; padding: 0; margin: 10px 0 16px; }
-.progress-steps li { height: 6px; border-radius: 3px; background: var(--surface-2); }
-.progress-steps li.past { background: var(--primary-soft); }
-.progress-steps li.now { background: var(--primary); }
+.progress-steps li { display: flex; }
+/* Each step is a button: a thin bar inside a 44 px tall target. */
+.progress-steps button { flex: 1; min-height: 44px; margin: -19px 0; padding: 19px 0; border: 0; background: transparent; cursor: pointer; }
+.progress-steps button::before { content: ''; display: block; height: 6px; border-radius: 3px; background: var(--surface-2); }
+.progress-steps button.past::before { background: var(--primary-soft); }
+.progress-steps button.now::before { background: var(--primary); }
+.progress-steps button:hover::before { outline: 2px solid var(--primary-soft); }
 .step { display: flex; flex-direction: column; gap: 12px; }
 .step-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .step-actions.sticky { position: sticky; bottom: 0; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 80%, transparent); z-index: 3; }
@@ -347,9 +351,59 @@ progress { width: 100%; max-width: 420px; height: 12px; }
 
 /* «Запис себе» */
 .self-record { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.self-record .button[aria-pressed='true'] { background: var(--primary-soft); font-weight: 700; }
 .self-record p.meta { flex-basis: 100%; margin: 0; font-size: 15px; }
-.rec { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--marked); font-variant-numeric: tabular-nums; }
 .rec-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--marked); animation: rec 1s ease-in-out infinite alternate; }
 @keyframes rec { to { opacity: 0.3; } }
 @media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+
+/* Pressing: every tappable thing shrinks and darkens a little while held. */
+.button, .option, .chip-button, .tab, .segmented button, .card-steps summary, .card-steps a, .suggestion {
+  transition: transform 0.08s ease, filter 0.08s ease, background-color 0.15s ease;
+}
+.button:active:not(:disabled), .option:active:not(:disabled), .chip-button:active, .tab:active, .segmented button:active,
+.card-steps summary:active, .card-steps a:active, .suggestion:active, .progress-steps button:active {
+  transform: scale(0.96);
+  filter: brightness(0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .button:active:not(:disabled), .option:active:not(:disabled), .chip-button:active, .tab:active, .segmented button:active { transform: none; }
+}
+
+/* A button while its sound plays: filled, with moving bars; a tap stops it. */
+.button.playing { background: var(--primary-soft); border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.button.primary.playing { background: var(--primary); filter: brightness(1.1); }
+.bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-right: 8px; vertical-align: -1px; }
+.bars i { width: 3px; height: 100%; background: currentColor; border-radius: 1px; animation: bars 0.9s ease-in-out infinite; transform-origin: bottom; }
+.bars i:nth-child(2) { animation-delay: -0.3s; }
+.bars i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes bars { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .bars i { animation: none; transform: scaleY(0.7); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* A new line, phrase or card appears with a short fade: the answer was taken. */
+.focus-card { animation: appear 0.25s ease-out; }
+@keyframes appear { from { opacity: 0.2; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .focus-card { animation: none; } }
+
+/* «Запис»: count-in, level meter */
+.rec-button { display: inline-flex; align-items: center; gap: 8px; }
+.rec-button.recording { background: var(--marked); border-color: var(--marked); color: #fff; }
+.rec-button .rec-dot { animation: none; }
+.rec-square { width: 12px; height: 12px; border-radius: 2px; background: currentColor; }
+.rec-time { font-weight: 700; color: var(--marked); font-variant-numeric: tabular-nums; }
+.countin { display: inline-flex; align-items: center; gap: 8px; }
+.countin .beat { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--primary); font-weight: 700; color: var(--primary); }
+.countin .beat.on { background: var(--primary); color: var(--on-primary); }
+.meter { width: 160px; height: 12px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-block; }
+.meter span { display: block; height: 100%; background: linear-gradient(to right, #2e7d32, #f9a825 70%, var(--marked)); transform-origin: left; transition: transform 0.05s linear; }
+
+.step-nav { display: inline-flex; gap: 8px; }
+.quiz-listen { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.card-actions .button { flex: 1 1 auto; white-space: nowrap; }
+
+/* «?»: the list of keys */
+.keys-help { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+.keys-help dt { white-space: nowrap; }
+.keys-help dt kbd { display: inline-block; margin: 0 4px 0 0; opacity: 1; }
+.keys-button { margin-left: auto; }
+@media (pointer: coarse) { :root:not([data-keys]) .keys-button { display: none; } }

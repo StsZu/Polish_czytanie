@@ -156,6 +156,7 @@ export interface Settings {
   theme: 'system' | 'light' | 'dark'
   rate: number
   pacer: boolean
+  /** Not used since the «Запис» button in the steps (kept so old copies still import). */
   recordSelf: boolean
   /** Id of the narrator voice (`ContentFile.voices`). */
   voice: string

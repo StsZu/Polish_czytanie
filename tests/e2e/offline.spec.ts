@@ -40,12 +40,8 @@ test('manifest and service worker under /Polish_czytanie/, a whole session offli
   await context.setOffline(true)
   await page.reload()
   await expect(page.getByTestId('session')).toBeVisible()
-  // 0 — cold reading
-  await page.getByTestId('start').click()
-  await page.waitForTimeout(13_000)
-  await page.getByTestId('finish').click()
-  await expect(page.getByTestId('paceResult')).toContainText('Холодний темп')
-  await page.getByTestId('next').click()
+  // The first session starts with the rule: the tempo check comes on later days.
+  await expect(page.getByTestId('session')).toHaveAttribute('data-step', '1')
   // 1 — rule: a word sounds from the cache
   await page.getByTestId('word').first().click()
   await expect(page.locator('.notice')).toHaveCount(0)
@@ -82,14 +78,14 @@ test('manifest and service worker under /Polish_czytanie/, a whole session offli
   // 7 — rating
   await page.getByTestId('rating-1').click()
   await page.getByTestId('finishSession').click()
-  await expect(page.getByTestId('today')).toBeVisible()
+  await expect(page.getByTestId('exercises')).toBeVisible()
   await expect(page.locator('.notice:has-text("Немає запису")')).toHaveCount(0)
-  for (const tab of ['exercises', 'hard', 'discrimination', 'progress', 'settings']) {
+  for (const tab of ['today', 'hard', 'discrimination', 'progress', 'settings', 'exercises']) {
     await page.getByTestId(`tab-${tab}`).click()
     await expect(page.locator('main')).not.toBeEmpty()
   }
   const before = await counts(page)
-  expect(before.attempts).toBeGreaterThan(30)
+  expect(before.attempts).toBeGreaterThan(25)
   expect(before.hard).toBe(1)
   await context.setOffline(false)
 
