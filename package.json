@@ -1,0 +1,36 @@
+{
+  "name": "polish-czytanie",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-content": "node scripts/sync-content.mjs",
+    "data": "node --experimental-strip-types --no-warnings scripts/data.ts",
+    "dev": "npm run data && vite",
+    "build": "npm run data && tsc --noEmit && vite build",
+    "build:pages": "npm run data && tsc --noEmit && vite build --mode pages",
+    "preview": "vite preview --port 4280",
+    "test": "npm run data --silent > /dev/null && vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/icons.mjs",
+    "check": "npm run build && npm run build:pages && sh scripts/check.sh",
+    "deploy": "npm run check && npx -y wrangler@4 deploy"
+  },
+  "dependencies": {
+    "idb": "8.0.4",
+    "react": "19.2.9",
+    "react-dom": "19.2.9"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "5.1.4",
+    "fake-indexeddb": "6.2.5",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vitest": "5.0.3"
+  }
+}
