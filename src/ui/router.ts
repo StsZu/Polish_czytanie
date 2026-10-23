@@ -1,5 +1,5 @@
 // Screens by URL hash: #/ (Підручник; #/cwiczenia too), #/dzis, #/c/07, #/c/07/krok/3, #/sluchaj/07, #/trudne, #/rozroznianie,
-// #/postep, #/ustawienia.
+// #/postep, #/ustawienia, #/wymowa.
 
 export type Route =
   | { name: 'today' }
@@ -11,6 +11,7 @@ export type Route =
   | { name: 'discrimination' }
   | { name: 'progress' }
   | { name: 'settings' }
+  | { name: 'pronunciation' }
 
 export function route(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
@@ -25,6 +26,7 @@ export function route(hash: string): Route {
     '/rozroznianie': { name: 'discrimination' },
     '/postep': { name: 'progress' },
     '/ustawienia': { name: 'settings' },
+    '/wymowa': { name: 'pronunciation' },
   }
   return simple[path] ?? { name: 'exercises' }
 }

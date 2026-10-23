@@ -407,3 +407,11 @@ progress { width: 100%; max-width: 420px; height: 12px; }
 .keys-help dt kbd { display: inline-block; margin: 0 4px 0 0; opacity: 1; }
 .keys-button { margin-left: auto; }
 @media (pointer: coarse) { :root:not([data-keys]) .keys-button { display: none; } }
+
+/* «Перевірка вимови» */
+.wymowa-words { display: flex; flex-wrap: wrap; gap: 8px; }
+.wymowa-word { display: inline-flex; align-items: center; gap: 2px; border-radius: 24px; }
+.wymowa-word.bad { outline: 2px solid var(--marked); }
+.wymowa-word .button.icon[aria-pressed='true'] { background: var(--marked); color: #fff; border-color: var(--marked); }
+.wymowa-list { white-space: pre-wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 15px/1.4 ui-monospace, Menlo, monospace; }
+.sticky-bar { position: sticky; top: 0; z-index: 3; background: var(--bg); padding: 8px 0; }

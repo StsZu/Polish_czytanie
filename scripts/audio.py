@@ -3,7 +3,8 @@
 
 Every piece is synthesised on its own and joined here with silence between, so a word, a line or a
 sentence can be played without catching the start of the next one:
-  gama   — every word separately (cached by word: the same word sounds the same in every exercise);
+  gama   — every word separately, by a model that keeps to Polish (WORD_MODEL; cached by word: the same word
+           sounds the same in every exercise);
   pasaże — every line separately, with timestamps;
   utwór  — every unit (sentence or dialogue line) with timestamps, the neighbours as context.
 align.json keeps the format of the course: ''.join(characters) == the section text, so scripts/data.ts
@@ -28,9 +29,18 @@ VOICES = {
 MODEL_ID = 'eleven_multilingual_v2'
 VOICE_SETTINGS = {'stability': 0.6, 'similarity_boost': 0.8, 'style': 0.0}
 WORD_SPEED = 0.85
+# Gama words alone: multilingual v2 guesses the language of a short word («but» as English «bat», «cena», «syn»…),
+# so they use models that keep to Polish — chosen by ear by the author (2026-10-23).
+WORD_MODEL = {
+    'alex': ('eleven_flash_v2_5', VOICE_SETTINGS),
+    'beata': ('eleven_v3', {'stability': 0.5, 'similarity_boost': 0.8}),
+}
 SPEED = {1: 0.8, 2: 0.9, 3: 1.0}
 # Seconds of silence: between gama words / gama lines, pasaże lines, utwór units / utwór lines.
 PAUSE = {'gama': (0.45, 0.9), 'pasaze': (0.7, 0.7), 'utwor': (0.35, 0.6)}
+# Per-word fixes after the author's review («Перевірка вимови»): {voice: {word: {"text": respelling, "model": id}}}.
+FIXES_PATH = os.path.join(ROOT, 'content', 'vymova.json')
+FIXES = json.load(open(FIXES_PATH, encoding='utf-8')) if os.path.exists(FIXES_PATH) else {}
 SR = 44100
 EDGE = int(0.03 * SR)           # silence kept at both ends of a trimmed piece
 THRESHOLD = 110                 # ≈ −50 dBFS in 16-bit samples
@@ -45,9 +55,9 @@ def md5(text):
     return hashlib.md5(text.encode('utf-8')).hexdigest()
 
 
-def request(voice, text, speed, timestamps, prev='', nxt=''):
+def request(voice, text, speed, timestamps, prev='', nxt='', model=MODEL_ID, settings=VOICE_SETTINGS):
     global chars_sent
-    body = {'text': text, 'model_id': MODEL_ID, 'language_code': 'pl', 'voice_settings': dict(VOICE_SETTINGS, speed=speed)}
+    body = {'text': text, 'model_id': model, 'language_code': 'pl', 'voice_settings': dict(settings, speed=speed)}
     if prev: body['previous_text'] = prev
     if nxt: body['next_text'] = nxt
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{VOICES[voice]}' + ('/with-timestamps' if timestamps else '') + '?output_format=mp3_44100_128'
@@ -90,13 +100,20 @@ def voiced(samples):
 
 def word_clip(voice, word):
     """A gama word: synthesised once per voice, trimmed to the voice with EDGE of silence; cached."""
-    path = os.path.join(CACHE, voice, f'w-{md5(word.lower() + f"@{WORD_SPEED}")}.pcm')
+    model, settings = WORD_MODEL[voice]
+    fix = FIXES.get(voice, {}).get(word.lower(), {})
+    model = fix.get('model', model)
+    said = fix.get('text', word)
+    extra = f'@{said}' if fix else ''
+    path = os.path.join(CACHE, voice, f'w-{md5(word.lower() + f"@{WORD_SPEED}@{model}{extra}")}.pcm')
     if os.path.exists(path):
         a = array.array('h')
         with open(path, 'rb') as f:
             a.frombytes(f.read())
         return a
-    s = pcm(request(voice, word, WORD_SPEED, False))
+    if model != WORD_MODEL[voice][0]:
+        settings = VOICE_SETTINGS if model != 'eleven_v3' else {'stability': 0.5, 'similarity_boost': 0.8}
+    s = pcm(request(voice, said, WORD_SPEED, False, model=model, settings=settings))
     a, b = voiced(s)
     clip = s[max(0, a - EDGE):min(len(s), b + EDGE)]
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -195,7 +212,8 @@ def build_section(voice, sec):
 
 
 def params(voice, sec):
-    return md5(json.dumps([sec['text'], sec['pieces'], VOICES[voice], MODEL_ID, VOICE_SETTINGS, WORD_SPEED, SPEED[sec['level']], PAUSE[sec['kind']], EDGE, THRESHOLD, TRIM]))
+    return md5(json.dumps([sec['text'], sec['pieces'], VOICES[voice], MODEL_ID, VOICE_SETTINGS, WORD_SPEED, WORD_MODEL[voice] if sec['kind'] == 'gama' else None,
+                           {w: f for w, f in FIXES.get(voice, {}).items() if sec['kind'] == 'gama' and w in sec['text'].lower()} or None, SPEED[sec['level']], PAUSE[sec['kind']], EDGE, THRESHOLD, TRIM]))
 
 
 def main():
@@ -243,7 +261,7 @@ def main():
         os.makedirs(os.path.dirname(base), exist_ok=True)
         with open(base + '.mp3', 'wb') as f:
             f.write(mp3)
-        align.update({'tekst_md5': md5(sec['text']), 'param_md5': p, 'voice_id': VOICES[voice], 'model_id': MODEL_ID})
+        align.update({'tekst_md5': md5(sec['text']), 'param_md5': p, 'voice_id': VOICES[voice], 'model_id': WORD_MODEL[voice][0] if sec['kind'] == 'gama' else MODEL_ID})
         with open(base + '.align.json', 'w') as f:
             json.dump(align, f, ensure_ascii=False)
         print(f'  ✓ {voice} {sec["stem"]} · {align["character_end_times_seconds"][-1]:.1f} с · знаків надіслано: {chars_sent}', flush=True)

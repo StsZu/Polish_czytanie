@@ -13,6 +13,7 @@ import { Today } from './Today.tsx'
 import { Discrimination } from './train/Discrimination.tsx'
 import { HardWords } from './train/HardWords.tsx'
 import { Progress } from './train/Progress.tsx'
+import { Pronunciation } from './train/Pronunciation.tsx'
 
 export const TABS: { name: Route['name']; href: string; label: string }[] = [
   { name: 'exercises', href: '#/', label: 'Підручник' },
@@ -84,7 +85,7 @@ function Shell() {
         <nav className="tabs" aria-label="Розділи">
           <span className="brand">Czytanie</span>
           {TABS.map((t) => (
-            <a key={t.name} href={t.href} className="tab" aria-current={r.name === t.name || (t.name === 'exercises' && r.name === 'listen') ? 'page' : undefined} data-testid={`tab-${t.name}`}>{t.label}</a>
+            <a key={t.name} href={t.href} className="tab" aria-current={r.name === t.name || (t.name === 'exercises' && r.name === 'listen') || (t.name === 'settings' && r.name === 'pronunciation') ? 'page' : undefined} data-testid={`tab-${t.name}`}>{t.label}</a>
           ))}
           <button type="button" className="button icon keys-button" onClick={() => setKeysHelp(true)} aria-label="Клавіші" data-testid="keysButton">?</button>
         </nav>
@@ -108,6 +109,7 @@ function Shell() {
         {r.name === 'discrimination' && <Discrimination />}
         {r.name === 'progress' && <Progress />}
         {r.name === 'settings' && <SettingsScreen />}
+        {r.name === 'pronunciation' && <Pronunciation />}
         {'id' in r && !exercise && <p className="notice">Такої вправи немає. <a href="#/">До підручника</a></p>}
       </main>
     </div>

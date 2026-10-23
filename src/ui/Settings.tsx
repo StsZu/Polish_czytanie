@@ -119,6 +119,8 @@ export function SettingsScreen() {
         <span>Ведучий у читанні на темп</span>
       </label>
 
+      <p><a className="button" href="#/wymowa" data-testid="openPronunciation">Перевірка вимови слів гами</a></p>
+
       <h2>Аудіо без інтернету</h2>
       <p className="meta" data-testid="audioState">На пристрої: {cached.size} з 21 вправ ({MB(cachedBytes)} з {MB(totalBytes)}). Аудіо вправи завантажується, коли ви її відкриваєте.</p>
       {download && download.doneBytes < download.totalBytes && (

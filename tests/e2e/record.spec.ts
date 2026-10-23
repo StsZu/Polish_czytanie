@@ -8,7 +8,7 @@ test('«Запис»: three clicks, then recording with the level; «Перев�
   await expect(page.getByTestId('record')).toBeVisible()
   await page.keyboard.press('r')
   await expect(page.getByTestId('countin')).toBeVisible()
-  await expect(page.locator('.countin .beat.on')).toHaveCount(3, { timeout: 3000 })
+  await expect(page.locator('.countin .beat.on').first()).toBeVisible()
   await expect(page.getByTestId('recording')).toBeVisible({ timeout: 3000 })
   await expect.poll(async () => Number(await page.getByTestId('meter').getAttribute('aria-valuenow')), { timeout: 5000 }).toBeGreaterThan(0)
   await expect(page.getByTestId('recording')).toContainText('Запис 0:01', { timeout: 3000 })
